@@ -397,7 +397,7 @@ onUnmounted(async () => {
   flex-direction: column;
   background: var(--void-light);
   border-right: 1px solid var(--glass-border);
-  overflow-y: auto;
+  /* overflow-y: auto; */
 }
 
 .gameroom__main {
@@ -552,7 +552,7 @@ onUnmounted(async () => {
     max-height: 200px;
     border-right: none;
     border-bottom: 1px solid var(--glass-border);
-    flex-direction: row;
+    /* flex-direction: row; */
   }
 
   .gameroom__header {

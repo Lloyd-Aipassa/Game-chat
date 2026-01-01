@@ -2,46 +2,46 @@
 defineProps({
   isActive: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isMuted: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isConnecting: {
     type: Boolean,
-    default: false
+    default: false,
   },
   error: {
     type: String,
-    default: null
+    default: null,
   },
   connectedPeers: {
     type: Number,
-    default: 0
-  }
-})
+    default: 0,
+  },
+});
 
-const emit = defineEmits(['toggle-voice', 'toggle-mute'])
+const emit = defineEmits(['toggle-voice', 'toggle-mute']);
 </script>
 
 <template>
   <div class="voice-controls">
     <div class="voice-controls__header">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-        <line x1="12" y1="19" x2="12" y2="23"/>
-        <line x1="8" y1="23" x2="16" y2="23"/>
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
       </svg>
       <span>Voice Chat</span>
     </div>
 
     <div v-if="error" class="voice-controls__error">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="15" y1="9" x2="9" y2="15"/>
-        <line x1="9" y1="9" x2="15" y2="15"/>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="15" y1="9" x2="9" y2="15" />
+        <line x1="9" y1="9" x2="15" y2="15" />
       </svg>
       <span>{{ error }}</span>
     </div>
@@ -53,9 +53,8 @@ const emit = defineEmits(['toggle-voice', 'toggle-mute'])
           class="voice-controls__value"
           :class="{
             'voice-controls__value--active': isActive,
-            'voice-controls__value--connecting': isConnecting
-          }"
-        >
+            'voice-controls__value--connecting': isConnecting,
+          }">
           <span class="voice-controls__dot"></span>
           {{ isConnecting ? 'Connecting...' : isActive ? 'Active' : 'Inactive' }}
         </span>
@@ -74,20 +73,24 @@ const emit = defineEmits(['toggle-voice', 'toggle-mute'])
         class="voice-controls__btn"
         :class="{
           'voice-controls__btn--active': isActive,
-          'voice-controls__btn--connecting': isConnecting
+          'voice-controls__btn--connecting': isConnecting,
         }"
         :disabled="isConnecting"
-        @click="emit('toggle-voice')"
-      >
+        @click="emit('toggle-voice')">
         <div class="voice-controls__btn-icon">
-          <svg v-if="!isActive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
+          <svg
+            v-if="!isActive"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
           <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <rect x="3" y="3" width="18" height="18" rx="2" />
           </svg>
         </div>
         <span>{{ isActive ? 'Leave Voice' : 'Join Voice' }}</span>
@@ -97,19 +100,23 @@ const emit = defineEmits(['toggle-voice', 'toggle-mute'])
         v-if="isActive"
         class="voice-controls__btn voice-controls__btn--mute"
         :class="{ 'voice-controls__btn--muted': isMuted }"
-        @click="emit('toggle-mute')"
-      >
+        @click="emit('toggle-mute')">
         <div class="voice-controls__btn-icon">
-          <svg v-if="!isMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <svg
+            v-if="!isMuted"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
           </svg>
           <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="1" y1="1" x2="23" y2="23"/>
-            <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
-            <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
+            <line x1="1" y1="1" x2="23" y2="23" />
+            <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+            <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
         </div>
         <span>{{ isMuted ? 'Unmute' : 'Mute' }}</span>
@@ -117,7 +124,11 @@ const emit = defineEmits(['toggle-voice', 'toggle-mute'])
     </div>
 
     <div v-if="isActive && !isMuted" class="voice-controls__visualizer">
-      <div class="voice-controls__bar" v-for="i in 5" :key="i" :style="{ '--delay': i * 0.1 + 's' }"></div>
+      <div
+        class="voice-controls__bar"
+        v-for="i in 5"
+        :key="i"
+        :style="{ '--delay': i * 0.1 + 's' }"></div>
     </div>
   </div>
 </template>
@@ -312,18 +323,33 @@ const emit = defineEmits(['toggle-voice', 'toggle-mute'])
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.2; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
 }
 
 @keyframes equalizer {
-  0%, 100% { height: 8px; }
-  50% { height: 24px; }
+  0%,
+  100% {
+    height: 8px;
+  }
+  50% {
+    height: 24px;
+  }
 }
 
 /* Mobile */
@@ -334,7 +360,8 @@ const emit = defineEmits(['toggle-voice', 'toggle-mute'])
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    padding: 0.75rem;
+
+    padding: 0;
   }
 
   .voice-controls__header {
@@ -353,6 +380,8 @@ const emit = defineEmits(['toggle-voice', 'toggle-mute'])
     flex: 1;
     justify-content: center;
     padding: 0.75rem;
+    border-radius: 0;
+    margin-top: 20px;
   }
 
   .voice-controls__btn span {
