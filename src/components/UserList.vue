@@ -335,6 +335,7 @@ const handleKick = (user) => {
     overflow-x: auto;
     gap: 0.75rem;
     padding-bottom: 0.5rem;
+    justify-content: space-between;
   }
 
   .user-item {
