@@ -545,6 +545,7 @@ onUnmounted(async () => {
 @media (max-width: 768px) {
   .gameroom__content {
     flex-direction: column;
+    height: 100%;
   }
 
   .gameroom__sidebar {
@@ -552,7 +553,14 @@ onUnmounted(async () => {
     max-height: 200px;
     border-right: none;
     border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
     /* flex-direction: row; */
+  }
+
+  .gameroom__main {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .gameroom__header {
