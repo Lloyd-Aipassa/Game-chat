@@ -13,6 +13,7 @@ import {
   arrayRemove,
   serverTimestamp,
   getDocs,
+  getDoc,
   where
 } from 'firebase/firestore'
 
@@ -27,6 +28,7 @@ export function useGameroom() {
   let roomsUnsubscribe = null
   let messagesUnsubscribe = null
   let roomUnsubscribe = null
+  let heartbeatInterval = null
 
   // Listen to all available rooms
   const subscribeToRooms = () => {
@@ -56,7 +58,8 @@ export function useGameroom() {
         users: [{
           id: userId,
           username,
-          joinedAt: Date.now()
+          joinedAt: Date.now(),
+          lastSeen: Date.now()
         }],
         createdAt: serverTimestamp(),
         maxUsers: 4
@@ -81,6 +84,25 @@ export function useGameroom() {
       const roomRef = doc(db, 'gamerooms', roomId)
       const userId = existingUserId || generateUserId()
 
+      // Check if room exists and if user is already in it (when reconnecting)
+      let shouldAddUser = true
+      if (existingUserId) {
+        const roomSnap = await getDoc(roomRef)
+        if (roomSnap.exists()) {
+          const roomData = roomSnap.data()
+          const existingUser = roomData.users?.find(u => u.id === existingUserId)
+          // If user is already in the room, don't add them again
+          if (existingUser) {
+            shouldAddUser = false
+            console.log('User already in room, reconnecting...')
+          } else {
+            console.log('User not in room, re-adding...')
+          }
+        } else {
+          throw new Error('Room does not exist')
+        }
+      }
+
       // Subscribe to room updates
       roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
         if (snapshot.exists()) {
@@ -92,13 +114,14 @@ export function useGameroom() {
         }
       })
 
-      // Only add user to room if not already added (no existingUserId)
-      if (!existingUserId) {
+      // Add user to room if needed
+      if (shouldAddUser) {
         await updateDoc(roomRef, {
           users: arrayUnion({
             id: userId,
             username,
-            joinedAt: Date.now()
+            joinedAt: Date.now(),
+            lastSeen: Date.now()
           })
         })
       }
@@ -114,6 +137,9 @@ export function useGameroom() {
         }))
       })
 
+      // Start heartbeat to keep user active
+      startHeartbeat(roomId, userId)
+
       return userId
     } catch (err) {
       console.error('Error joining room:', err)
@@ -127,6 +153,9 @@ export function useGameroom() {
   // Leave the current room
   const leaveRoom = async (roomId, userId, username) => {
     try {
+      // Stop heartbeat
+      stopHeartbeat()
+
       const roomRef = doc(db, 'gamerooms', roomId)
 
       // Find user object to remove
@@ -174,6 +203,92 @@ export function useGameroom() {
     } catch (err) {
       console.error('Error sending message:', err)
       error.value = 'Failed to send message'
+    }
+  }
+
+  // Update user's lastSeen timestamp (heartbeat)
+  const updateHeartbeat = async (roomId, userId) => {
+    try {
+      const roomRef = doc(db, 'gamerooms', roomId)
+      const roomSnap = await getDoc(roomRef)
+
+      if (!roomSnap.exists()) return
+
+      const roomData = roomSnap.data()
+      const currentUser = roomData.users?.find(u => u.id === userId)
+
+      if (currentUser) {
+        // Remove old user object and add updated one
+        const updatedUser = { ...currentUser, lastSeen: Date.now() }
+
+        await updateDoc(roomRef, {
+          users: arrayRemove(currentUser)
+        })
+
+        await updateDoc(roomRef, {
+          users: arrayUnion(updatedUser)
+        })
+      }
+    } catch (err) {
+      console.error('Error updating heartbeat:', err)
+    }
+  }
+
+  // Clean up inactive users (no heartbeat for 2+ minutes)
+  const cleanupInactiveUsers = async (roomId) => {
+    try {
+      const roomRef = doc(db, 'gamerooms', roomId)
+      const roomSnap = await getDoc(roomRef)
+
+      if (!roomSnap.exists()) return
+
+      const roomData = roomSnap.data()
+      const now = Date.now()
+      const TIMEOUT = 2 * 60 * 1000 // 2 minutes
+
+      const inactiveUsers = roomData.users?.filter(u => {
+        const lastSeen = u.lastSeen || u.joinedAt
+        return (now - lastSeen) > TIMEOUT
+      })
+
+      if (inactiveUsers && inactiveUsers.length > 0) {
+        console.log(`Cleaning up ${inactiveUsers.length} inactive users`)
+        for (const user of inactiveUsers) {
+          await updateDoc(roomRef, {
+            users: arrayRemove(user)
+          })
+          // Also clean up their signals
+          await cleanupSignals(roomId, user.id)
+        }
+      }
+    } catch (err) {
+      console.error('Error cleaning up inactive users:', err)
+    }
+  }
+
+  // Start heartbeat interval
+  const startHeartbeat = (roomId, userId) => {
+    // Clear any existing interval
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval)
+    }
+
+    // Update heartbeat every 30 seconds
+    heartbeatInterval = setInterval(async () => {
+      await updateHeartbeat(roomId, userId)
+      // Also cleanup inactive users periodically
+      await cleanupInactiveUsers(roomId)
+    }, 30000)
+
+    // Run cleanup immediately on start
+    cleanupInactiveUsers(roomId)
+  }
+
+  // Stop heartbeat interval
+  const stopHeartbeat = () => {
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval)
+      heartbeatInterval = null
     }
   }
 
@@ -236,6 +351,7 @@ export function useGameroom() {
 
   // Cleanup on unmount
   onUnmounted(() => {
+    stopHeartbeat()
     if (roomsUnsubscribe) roomsUnsubscribe()
     if (messagesUnsubscribe) messagesUnsubscribe()
     if (roomUnsubscribe) roomUnsubscribe()

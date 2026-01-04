@@ -1,18 +1,22 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import RoomList from './components/RoomList.vue'
 import GameRoom from './components/GameRoom.vue'
+import { useSession } from './composables/useSession'
 
 const currentView = ref('rooms') // 'rooms' | 'game'
 const activeRoom = ref(null)
 const activeUsername = ref('')
 const activeUserId = ref(null)
 
+const { getSession, clearSession } = useSession()
+
 const handleJoinRoom = ({ roomId, username, userId = null }) => {
   activeRoom.value = roomId
   activeUsername.value = username
   activeUserId.value = userId
   currentView.value = 'game'
+  // Session will be saved in GameRoom after successful join
 }
 
 const handleLeaveRoom = () => {
@@ -20,7 +24,32 @@ const handleLeaveRoom = () => {
   activeUsername.value = ''
   activeUserId.value = null
   currentView.value = 'rooms'
+
+  // Clear session from localStorage
+  clearSession()
 }
+
+// Check for existing session on mount
+onMounted(async () => {
+  const session = getSession()
+
+  if (session) {
+    console.log('Active session found, reconnecting to room:', session.roomId)
+    try {
+      // Automatically rejoin the room with saved credentials
+      // The joinRoom function will check if user is still in the room
+      handleJoinRoom({
+        roomId: session.roomId,
+        username: session.username,
+        userId: session.userId
+      })
+    } catch (error) {
+      console.error('Failed to reconnect to room:', error)
+      // Clear invalid session
+      clearSession()
+    }
+  }
+})
 </script>
 
 <template>

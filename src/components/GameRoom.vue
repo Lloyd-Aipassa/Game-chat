@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useGameroom } from '../composables/useGameroom'
 import { useVoiceChat } from '../composables/useVoiceChat'
 import { useAdmin } from '../composables/useAdmin'
+import { useSession } from '../composables/useSession'
 import UserList from './UserList.vue'
 import VoiceControls from './VoiceControls.vue'
 import ChatMessage from './ChatMessage.vue'
@@ -36,6 +37,7 @@ const {
 } = useGameroom()
 
 const { isAdmin } = useAdmin()
+const { clearSession, saveSession } = useSession()
 
 const userId = ref(null)
 const messageInput = ref('')
@@ -57,13 +59,18 @@ onMounted(async () => {
     userId.value = await joinRoom(props.roomId, props.username, props.userId)
   } catch (err) {
     console.error('Failed to join room:', err)
+    // If room doesn't exist or join fails, clear session and go back to room list
+    clearSession()
+    emit('leave-room')
   }
 })
 
-// Initialize voice chat when userId is set
+// Initialize voice chat when userId is set and save session
 watch(userId, (newId) => {
   if (newId) {
     voiceChat = useVoiceChat(props.roomId, newId)
+    // Save session after successful join
+    saveSession(props.roomId, props.username, newId)
   }
 })
 
@@ -168,11 +175,13 @@ watch(users, (newUsers, oldUsers) => {
   }
 }, { deep: true })
 
-// Cleanup on unmount
+// Cleanup on unmount (only when navigating away within the app)
 onUnmounted(async () => {
   if (voiceChat) {
     await voiceChat.stopVoiceChat()
   }
+  // Only cleanup if explicitly leaving (not just closing browser)
+  // The heartbeat system will handle cleanup for closed browsers
 })
 </script>
 
