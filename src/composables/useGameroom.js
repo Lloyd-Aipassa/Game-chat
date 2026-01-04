@@ -169,11 +169,8 @@ export function useGameroom() {
       // Clean up signals
       await cleanupSignals(roomId, userId)
 
-      // Check if room is empty and delete
-      const updatedRoom = currentRoom.value
-      if (updatedRoom && updatedRoom.users && updatedRoom.users.length <= 1) {
-        await deleteRoom(roomId)
-      }
+      // Note: Automatic room deletion is disabled
+      // Rooms stay active even when empty - only admins can delete rooms
 
       // Cleanup subscriptions
       if (messagesUnsubscribe) messagesUnsubscribe()
@@ -215,54 +212,22 @@ export function useGameroom() {
       if (!roomSnap.exists()) return
 
       const roomData = roomSnap.data()
-      const currentUser = roomData.users?.find(u => u.id === userId)
+      const users = roomData.users || []
 
-      if (currentUser) {
-        // Remove old user object and add updated one
-        const updatedUser = { ...currentUser, lastSeen: Date.now() }
-
-        await updateDoc(roomRef, {
-          users: arrayRemove(currentUser)
-        })
-
-        await updateDoc(roomRef, {
-          users: arrayUnion(updatedUser)
-        })
-      }
-    } catch (err) {
-      console.error('Error updating heartbeat:', err)
-    }
-  }
-
-  // Clean up inactive users (no heartbeat for 2+ minutes)
-  const cleanupInactiveUsers = async (roomId) => {
-    try {
-      const roomRef = doc(db, 'gamerooms', roomId)
-      const roomSnap = await getDoc(roomRef)
-
-      if (!roomSnap.exists()) return
-
-      const roomData = roomSnap.data()
-      const now = Date.now()
-      const TIMEOUT = 2 * 60 * 1000 // 2 minutes
-
-      const inactiveUsers = roomData.users?.filter(u => {
-        const lastSeen = u.lastSeen || u.joinedAt
-        return (now - lastSeen) > TIMEOUT
+      // Find and update the user in the array
+      const updatedUsers = users.map(u => {
+        if (u.id === userId) {
+          return { ...u, lastSeen: Date.now() }
+        }
+        return u
       })
 
-      if (inactiveUsers && inactiveUsers.length > 0) {
-        console.log(`Cleaning up ${inactiveUsers.length} inactive users`)
-        for (const user of inactiveUsers) {
-          await updateDoc(roomRef, {
-            users: arrayRemove(user)
-          })
-          // Also clean up their signals
-          await cleanupSignals(roomId, user.id)
-        }
-      }
+      // Update the entire users array at once (atomic operation)
+      await updateDoc(roomRef, {
+        users: updatedUsers
+      })
     } catch (err) {
-      console.error('Error cleaning up inactive users:', err)
+      console.error('Error updating heartbeat:', err)
     }
   }
 
