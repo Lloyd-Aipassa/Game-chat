@@ -1,6 +1,5 @@
 const SESSION_KEY = 'whereby_room_session'
 const CLEANUP_KEY = 'whereby_cleanup_pending'
-const SESSION_TIMEOUT = 4 * 60 * 60 * 1000 // 4 hours in milliseconds
 
 export function useSession() {
   /**
@@ -10,8 +9,7 @@ export function useSession() {
     const session = {
       roomId,
       username,
-      userId,
-      timestamp: Date.now()
+      userId
     }
 
     try {
@@ -60,8 +58,8 @@ export function useSession() {
 
       const session = JSON.parse(sessionData)
 
-      // Check if session has expired
-      if (!isSessionValid(session)) {
+      // Basic validation - just check if required fields exist
+      if (!session || !session.roomId || !session.username || !session.userId) {
         clearSession()
         return null
       }
@@ -74,17 +72,10 @@ export function useSession() {
   }
 
   /**
-   * Check if a session is still valid (not expired)
+   * Check if a session is still valid (no timeout - always valid if it exists)
    */
   const isSessionValid = (session) => {
-    if (!session || !session.timestamp) {
-      return false
-    }
-
-    const now = Date.now()
-    const sessionAge = now - session.timestamp
-
-    return sessionAge < SESSION_TIMEOUT
+    return !!(session && session.roomId && session.username && session.userId)
   }
 
   /**
@@ -98,26 +89,10 @@ export function useSession() {
     }
   }
 
-  /**
-   * Update the session timestamp to keep it alive
-   */
-  const refreshSession = () => {
-    const session = getSession()
-    if (session) {
-      session.timestamp = Date.now()
-      try {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-      } catch (error) {
-        console.error('Failed to refresh session:', error)
-      }
-    }
-  }
-
   return {
     saveSession,
     getSession,
     clearSession,
-    refreshSession,
     isSessionValid,
     getPendingCleanup,
     clearPendingCleanup

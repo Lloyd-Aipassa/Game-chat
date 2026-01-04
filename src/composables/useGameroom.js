@@ -276,12 +276,8 @@ export function useGameroom() {
     // Update heartbeat every 30 seconds
     heartbeatInterval = setInterval(async () => {
       await updateHeartbeat(roomId, userId)
-      // Also cleanup inactive users periodically
-      await cleanupInactiveUsers(roomId)
+      // Note: Automatic cleanup is disabled - users stay in room until they explicitly leave
     }, 30000)
-
-    // Run cleanup immediately on start
-    cleanupInactiveUsers(roomId)
   }
 
   // Stop heartbeat interval
