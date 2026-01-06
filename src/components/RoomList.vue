@@ -10,6 +10,7 @@ const { isAdmin, adminName, loginError, login, logout } = useAdmin()
 
 const showCreateModal = ref(false)
 const showLoginModal = ref(false)
+const showSettingsMenu = ref(false)
 const newRoomName = ref('')
 const username = ref('')
 const joiningRoomId = ref(null)
@@ -17,9 +18,14 @@ const joinUsername = ref('')
 const adminEmail = ref('')
 const adminPassword = ref('')
 const heroOpacity = ref(0.06)
+const heroImage = ref('/hero.jpeg')
 
 onMounted(() => {
   subscribeToRooms()
+  const savedImage = localStorage.getItem('heroImage')
+  if (savedImage) {
+    heroImage.value = savedImage
+  }
 })
 
 const handleCreateRoom = async () => {
@@ -76,32 +82,48 @@ const handleDeleteRoom = async (roomId) => {
     await deleteRoom(roomId)
   }
 }
+
+const handleImageUpload = (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file')
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    heroImage.value = e.target.result
+    localStorage.setItem('heroImage', e.target.result)
+  }
+  reader.readAsDataURL(file)
+}
+
+const resetHeroImage = () => {
+  heroImage.value = '/hero.jpeg'
+  localStorage.removeItem('heroImage')
+}
 </script>
 
 <template>
-  <div class="room-list" :style="{ '--hero-opacity': heroOpacity }">
+  <div class="room-list" :style="{ '--hero-opacity': heroOpacity, '--hero-image': `url(${heroImage})` }">
+    <!-- Background Image -->
+    <div class="room-list__bg"></div>
+
     <!-- Admin Controls Header -->
     <div class="room-list__top-bar">
-      <!-- Hero Opacity Slider -->
-      <div class="room-list__opacity-control">
-        <label class="opacity-control__label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-          <span>BG</span>
-        </label>
-        <input
-          type="range"
-          v-model.number="heroOpacity"
-          min="0"
-          max="0.3"
-          step="0.01"
-          class="opacity-control__slider"
-          title="Background opacity"
-        />
-        <span class="opacity-control__value">{{ Math.round(heroOpacity * 100) }}%</span>
-      </div>
+      <!-- Settings Button -->
+      <button
+        class="room-list__settings-btn"
+        @click="showSettingsMenu = !showSettingsMenu"
+        title="Settings"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2"/>
+        </svg>
+      </button>
 
       <div class="room-list__admin-controls">
         <!-- Not logged in: Show login button -->
@@ -393,6 +415,91 @@ const handleDeleteRoom = async (roomId) => {
         </div>
       </div>
     </Teleport>
+
+    <!-- Settings Menu -->
+    <Transition name="slide-in">
+      <div v-if="showSettingsMenu" class="settings-menu">
+        <div class="settings-menu__header">
+          <h3>Settings</h3>
+          <button class="settings-menu__close" @click="showSettingsMenu = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="settings-menu__body">
+          <!-- Background Opacity -->
+          <div class="settings-section">
+            <label class="settings-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span>Background Opacity</span>
+            </label>
+            <div class="settings-control">
+              <input
+                type="range"
+                v-model.number="heroOpacity"
+                min="0"
+                max="0.3"
+                step="0.01"
+                class="settings-slider"
+              />
+              <span class="settings-value">{{ Math.round(heroOpacity * 100) }}%</span>
+            </div>
+          </div>
+
+          <!-- Background Image Upload -->
+          <div class="settings-section">
+            <label class="settings-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <span>Background Image</span>
+            </label>
+            <div class="settings-control settings-control--column">
+              <label class="upload-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                </svg>
+                Upload Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  @change="handleImageUpload"
+                  style="display: none;"
+                />
+              </label>
+              <button
+                v-if="heroImage !== '/hero.jpeg'"
+                class="reset-btn"
+                @click="resetHeroImage"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 4 1 10 7 10"/>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+                Reset to Default
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Settings Overlay -->
+    <Transition name="fade">
+      <div
+        v-if="showSettingsMenu"
+        class="settings-overlay"
+        @click="showSettingsMenu = false"
+      ></div>
+    </Transition>
   </div>
 </template>
 
@@ -407,14 +514,13 @@ const handleDeleteRoom = async (roomId) => {
   padding-bottom: calc(2rem + env(safe-area-inset-bottom));
 }
 
-.room-list::before {
-  content: '';
+.room-list__bg {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url('/hero.jpeg');
+  background-image: var(--hero-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -551,56 +657,164 @@ const handleDeleteRoom = async (roomId) => {
   height: 18px;
 }
 
-.room-list__opacity-control {
+.room-list__settings-btn {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.875rem;
-  background: var(--glass-bg);
+  justify-content: center;
+  background: var(--void-lighter);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.room-list__opacity-control:hover {
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 15px rgba(0, 255, 247, 0.15);
+.room-list__settings-btn:hover {
+  background: var(--void-light);
+  color: var(--neon-purple);
+  border-color: var(--neon-purple);
+  transform: translateY(-2px);
 }
 
-.opacity-control__label {
+.room-list__settings-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Settings Menu */
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}
+
+.settings-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  background: var(--glass-bg);
+  border-left: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
+}
+
+.settings-menu__header {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 600;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.settings-menu__header h3 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--neon-purple);
+  margin: 0;
+  text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+}
+
+.settings-menu__close {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 0, 128, 0.1);
+  border: 1px solid rgba(255, 0, 128, 0.3);
+  border-radius: 8px;
+  color: var(--neon-pink);
   cursor: pointer;
-  user-select: none;
+  transition: all 0.2s ease;
 }
 
-.opacity-control__label svg {
-  width: 16px;
-  height: 16px;
+.settings-menu__close:hover {
+  background: rgba(255, 0, 128, 0.2);
+  border-color: var(--neon-pink);
+  transform: scale(1.1);
 }
 
-.opacity-control__slider {
-  width: 120px;
-  height: 4px;
+.settings-menu__close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.settings-menu__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.settings-label svg {
+  width: 20px;
+  height: 20px;
+  color: var(--neon-cyan);
+}
+
+.settings-control {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(18, 18, 26, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.settings-control--column {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.settings-slider {
+  flex: 1;
+  height: 6px;
   -webkit-appearance: none;
   appearance: none;
   background: var(--void-lighter);
-  border-radius: 2px;
+  border-radius: 3px;
   outline: none;
   cursor: pointer;
 }
 
-.opacity-control__slider::-webkit-slider-thumb {
+.settings-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   background: var(--neon-cyan);
   border-radius: 50%;
   cursor: pointer;
@@ -608,14 +822,14 @@ const handleDeleteRoom = async (roomId) => {
   box-shadow: 0 0 10px rgba(0, 255, 247, 0.5);
 }
 
-.opacity-control__slider::-webkit-slider-thumb:hover {
+.settings-slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  box-shadow: 0 0 15px rgba(0, 255, 247, 0.8);
+  box-shadow: 0 0 20px rgba(0, 255, 247, 0.8);
 }
 
-.opacity-control__slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+.settings-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
   background: var(--neon-cyan);
   border: none;
   border-radius: 50%;
@@ -624,18 +838,106 @@ const handleDeleteRoom = async (roomId) => {
   box-shadow: 0 0 10px rgba(0, 255, 247, 0.5);
 }
 
-.opacity-control__slider::-moz-range-thumb:hover {
+.settings-slider::-moz-range-thumb:hover {
   transform: scale(1.2);
-  box-shadow: 0 0 15px rgba(0, 255, 247, 0.8);
+  box-shadow: 0 0 20px rgba(0, 255, 247, 0.8);
 }
 
-.opacity-control__value {
-  min-width: 40px;
+.settings-value {
+  min-width: 50px;
   text-align: right;
   color: var(--neon-cyan);
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(0, 255, 247, 0.2));
+  border: 2px solid var(--neon-purple);
+  border-radius: 10px;
+  color: var(--neon-purple);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-btn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(0, 255, 247, 0.3));
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.upload-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.reset-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  border-radius: 8px;
+  color: var(--neon-orange);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reset-btn:hover {
+  background: rgba(255, 107, 53, 0.2);
+  border-color: var(--neon-orange);
+  transform: translateY(-2px);
+}
+
+.reset-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Transitions */
+.slide-in-enter-active,
+.slide-in-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-in-enter-from {
+  transform: translateX(100%);
+}
+
+.slide-in-leave-to {
+  transform: translateX(100%);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 640px) {
+  .settings-menu {
+    max-width: 100%;
+  }
 }
 
 .room-list__create-btn {
