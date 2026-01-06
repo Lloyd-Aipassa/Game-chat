@@ -16,6 +16,7 @@ const joiningRoomId = ref(null)
 const joinUsername = ref('')
 const adminEmail = ref('')
 const adminPassword = ref('')
+const heroOpacity = ref(0.06)
 
 onMounted(() => {
   subscribeToRooms()
@@ -78,9 +79,30 @@ const handleDeleteRoom = async (roomId) => {
 </script>
 
 <template>
-  <div class="room-list">
+  <div class="room-list" :style="{ '--hero-opacity': heroOpacity }">
     <!-- Admin Controls Header -->
     <div class="room-list__top-bar">
+      <!-- Hero Opacity Slider -->
+      <div class="room-list__opacity-control">
+        <label class="opacity-control__label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span>BG</span>
+        </label>
+        <input
+          type="range"
+          v-model.number="heroOpacity"
+          min="0"
+          max="0.3"
+          step="0.01"
+          class="opacity-control__slider"
+          title="Background opacity"
+        />
+        <span class="opacity-control__value">{{ Math.round(heroOpacity * 100) }}%</span>
+      </div>
+
       <div class="room-list__admin-controls">
         <!-- Not logged in: Show login button -->
         <button
@@ -403,7 +425,8 @@ const handleDeleteRoom = async (roomId) => {
 
 .room-list__top-bar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.5rem;
 }
 
@@ -526,6 +549,93 @@ const handleDeleteRoom = async (roomId) => {
 .room-list__logout-btn svg {
   width: 18px;
   height: 18px;
+}
+
+.room-list__opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.875rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.room-list__opacity-control:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 255, 247, 0.15);
+}
+
+.opacity-control__label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.opacity-control__label svg {
+  width: 16px;
+  height: 16px;
+}
+
+.opacity-control__slider {
+  width: 120px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--void-lighter);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.opacity-control__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--neon-cyan);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(0, 255, 247, 0.5);
+}
+
+.opacity-control__slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px rgba(0, 255, 247, 0.8);
+}
+
+.opacity-control__slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--neon-cyan);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(0, 255, 247, 0.5);
+}
+
+.opacity-control__slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px rgba(0, 255, 247, 0.8);
+}
+
+.opacity-control__value {
+  min-width: 40px;
+  text-align: right;
+  color: var(--neon-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .room-list__create-btn {
