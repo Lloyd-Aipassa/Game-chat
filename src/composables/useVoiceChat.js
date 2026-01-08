@@ -86,11 +86,13 @@ export function useVoiceChat(roomId, userId) {
       // Listen for incoming signals
       listenForSignals()
 
-      // Create peer connections for each user
+      // Create peer connections for ALL users who have voice active
+      // This ensures full mesh connectivity
       for (const user of otherUsers) {
-        if (user.id !== userId && !peers.value[user.id]) {
-          // Initiate connection to users who joined before us
+        if (user.id !== userId && user.isVoiceActive && !peers.value[user.id]) {
+          // Initiate connection based on consistent rule (higher ID initiates)
           const shouldInitiate = userId > user.id
+          console.log(`Connecting to voice-active user ${user.username} (${user.id}), initiator: ${shouldInitiate}`)
           await createPeerConnection(user.id, shouldInitiate)
         }
       }
@@ -254,11 +256,12 @@ export function useVoiceChat(roomId, userId) {
     }
   }
 
-  // Handle new user joining
+  // Handle new user joining or existing user activating voice
   const handleUserJoined = async (user) => {
-    if (user.id !== userId && !peers.value[user.id] && localStream.value) {
+    if (user.id !== userId && user.isVoiceActive && !peers.value[user.id] && localStream.value) {
       // We initiate if our ID is "greater"
       const shouldInitiate = userId > user.id
+      console.log(`User ${user.username} activated voice, connecting...`)
       await createPeerConnection(user.id, shouldInitiate)
     }
   }

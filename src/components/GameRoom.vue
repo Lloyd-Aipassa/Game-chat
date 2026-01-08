@@ -33,7 +33,8 @@ const {
   error: roomError,
   joinRoom,
   leaveRoom,
-  sendMessage
+  sendMessage,
+  updateVoiceState
 } = useGameroom()
 
 const { isAdmin } = useAdmin()
@@ -87,6 +88,24 @@ watch(users, (newUsers, oldUsers) => {
     voiceChat.handleUserJoined(user)
   }
 
+  // Check for users who changed their voice active state
+  const oldUsersMap = new Map((oldUsers || []).map(u => [u.id, u]))
+  for (const user of newUsers) {
+    if (user.id === userId.value) continue
+
+    const oldUser = oldUsersMap.get(user.id)
+    // If user just activated voice, connect to them
+    if (oldUser && !oldUser.isVoiceActive && user.isVoiceActive) {
+      console.log(`User ${user.username} activated voice`)
+      voiceChat.handleUserJoined(user)
+    }
+    // If user deactivated voice, disconnect
+    else if (oldUser && oldUser.isVoiceActive && !user.isVoiceActive) {
+      console.log(`User ${user.username} deactivated voice`)
+      voiceChat.handleUserLeft(user.id)
+    }
+  }
+
   // Find users who left
   const newIds = new Set(newUsers.map(u => u.id))
   const leftUsers = (oldUsers || []).filter(u => !newIds.has(u.id))
@@ -127,10 +146,14 @@ const handleToggleVoice = async () => {
   if (isVoiceActive.value) {
     await voiceChat.stopVoiceChat()
     isVoiceActive.value = false
+    // Update Firestore: voice inactive
+    await updateVoiceState(props.roomId, userId.value, false)
   } else {
     try {
       await voiceChat.startVoiceChat(users.value)
       isVoiceActive.value = true
+      // Update Firestore: voice active
+      await updateVoiceState(props.roomId, userId.value, true)
     } catch (err) {
       console.error('Failed to start voice chat:', err)
     }

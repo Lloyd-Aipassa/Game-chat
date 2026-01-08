@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 // Admin credentials - multiple admins with same password
 const ADMIN_ACCOUNTS = [
   { email: 'lloyd.aipassa@gmail.com', password: 'Aipassa321!', name: 'Lloyd' },
-  { email: 'ioaioassa@gmail.com', password: 'Aipassa321!', name: 'Manoe' },
+  { email: 'ioaipassa@gmail.com', password: 'Aipassa321!', name: 'Manoe' },
   { email: 'mickeyaipassa@hotmail.com', password: 'Aipassa321!', name: 'Mickey' }
 ]
 

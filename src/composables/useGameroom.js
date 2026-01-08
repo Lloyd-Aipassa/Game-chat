@@ -231,6 +231,36 @@ export function useGameroom() {
     }
   }
 
+  // Update user's voice active state
+  const updateVoiceState = async (roomId, userId, isVoiceActive) => {
+    try {
+      const roomRef = doc(db, 'gamerooms', roomId)
+      const roomSnap = await getDoc(roomRef)
+
+      if (!roomSnap.exists()) return
+
+      const roomData = roomSnap.data()
+      const users = roomData.users || []
+
+      // Find and update the user in the array
+      const updatedUsers = users.map(u => {
+        if (u.id === userId) {
+          return { ...u, isVoiceActive, lastSeen: Date.now() }
+        }
+        return u
+      })
+
+      // Update the entire users array at once (atomic operation)
+      await updateDoc(roomRef, {
+        users: updatedUsers
+      })
+
+      console.log(`Updated voice state for ${userId}: ${isVoiceActive}`)
+    } catch (err) {
+      console.error('Error updating voice state:', err)
+    }
+  }
+
   // Start heartbeat interval
   const startHeartbeat = (roomId, userId) => {
     // Clear any existing interval
@@ -332,6 +362,7 @@ export function useGameroom() {
     sendMessage,
     deleteRoom,
     isRoomFull,
-    generateUserId
+    generateUserId,
+    updateVoiceState
   }
 }
